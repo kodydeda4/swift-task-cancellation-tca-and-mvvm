@@ -42,10 +42,11 @@ final class SheetModel: Identifiable {
   @ObservationIgnored
   @Dependency(\.fuckbar) var fuckbar
   
-  var task: Task<Void, Never> {
-    Task.detached {
+  func task() async {
+    await Task.detached {
       for await _ in await self.fuckbar.values() {}
     }
+    .cancellableValue
   }
   
   func cancelButtonTapped() {
@@ -60,7 +61,7 @@ struct SheetViewMVVM: View {
     NavigationStack {
       Text("Sheet")
     }
-    .task { await self.model.task.cancellableValue }
+    .task { await self.model.task() }
     .toolbar {
       Button("Cancel") {
         self.model.cancelButtonTapped()
