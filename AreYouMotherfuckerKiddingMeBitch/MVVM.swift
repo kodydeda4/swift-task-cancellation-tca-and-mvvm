@@ -4,7 +4,7 @@ import Dependencies
 @Observable
 @MainActor
 final class AppModel {
-  var sheet: SheetModel? { didSet { self.bind() }}
+  var sheet: SheetModel? { didSet { self.bind() } }
   
   func buttonTapped() {
     self.sheet = SheetModel()
@@ -42,11 +42,10 @@ final class SheetModel: Identifiable {
   @ObservationIgnored
   @Dependency(\.fuckbar) var fuckbar
   
-  func task() async {
-    await Task.detached {
+  var task: Task<Void, Never> {
+    Task.detached {
       for await _ in await self.fuckbar.values() {}
     }
-    .cancellableValue
   }
   
   func cancelButtonTapped() {
@@ -61,7 +60,7 @@ struct SheetViewMVVM: View {
     NavigationStack {
       Text("Sheet")
     }
-    .task { await self.model.task() }
+    .task { await self.model.task.cancellableValue }
     .toolbar {
       Button("Cancel") {
         self.model.cancelButtonTapped()
