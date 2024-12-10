@@ -79,7 +79,7 @@ struct SheetReducer {
         
       case .task:
         return .run { send in
-          for await value in await self.fuckbar.values() {
+          for await value in self.fuckbar.values() {
             await send(.fuckbarResponse(value))
           }
         }

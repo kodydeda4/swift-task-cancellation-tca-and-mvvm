@@ -16,10 +16,9 @@ extension FuckbarClient: DependencyKey {
   static var liveValue = Self {
     AsyncStream { continuation in
       let task = Task {
-        // you have to check this for time consuming stuffz
-        // if the task is canceled and you're computing crap
-        // it won't know that ur canceled.
         while !Task.isCancelled {
+          // You must check !Task.isCancelled
+          // to short-circuit work
           let value = Model(
             id: UUID(),
             rawValue: Int.random(in: 1..<100)

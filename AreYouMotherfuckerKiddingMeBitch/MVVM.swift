@@ -60,10 +60,6 @@ final class SheetModel: Identifiable {
     self.dismiss()
   }
   
-  func addValue(value: FuckbarClient.Model) {
-    self.values.append(value)
-  }
-  
   func task() async {
     await withTaskGroup(of: Void.self) { taskGroup in
       taskGroup.addTask {
