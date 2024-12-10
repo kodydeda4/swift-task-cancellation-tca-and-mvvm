@@ -1,4 +1,5 @@
 import SwiftUI
+import ComposableArchitecture
 
 @main
 struct Main: App {
@@ -10,15 +11,20 @@ struct Main: App {
 }
 
 struct RootView: View {
+  @Bindable var model = AppModel()
+  @Bindable var store = StoreOf<AppReducer>(
+    initialState: AppReducer.State(),
+    reducer: AppReducer.init
+  )
   var body: some View {
     NavigationStack {
       List {
         Section {
-          NavigationLink("TCA") {
-            AppViewTCA()
-          }
           NavigationLink("MVVM") {
-            AppViewMVVM()
+            AppViewMVVM(model: self.model)
+          }
+          NavigationLink("TCA") {
+            AppViewTCA(store: self.store)
           }
         } header: {
           Text("This is a demo to see how to cancel view.task() in mvvm & tca.")

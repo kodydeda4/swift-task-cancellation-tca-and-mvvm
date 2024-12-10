@@ -5,36 +5,35 @@ import ComposableArchitecture
 struct AppReducer {
   @ObservableState
   struct State: Equatable {
-    @Presents var sheet: SheetReducer.State?
+    @Presents var destination: Destination.State?
   }
   enum Action {
     case buttonTapped
-    case sheet(PresentationAction<SheetReducer.Action>)
+    case destination(PresentationAction<Destination.Action>)
   }
   var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
         
       case .buttonTapped:
-        state.sheet = SheetReducer.State()
+        state.destination = .sheet(SheetReducer.State())
         return .none
         
-      case .sheet:
+      case .destination:
         return .none
       }
     }
-    .ifLet(\.$sheet, action: \.sheet) {
-      SheetReducer()
-    }
+    .ifLet(\.$destination, action: \.destination)
+  }
+  
+  @Reducer(state: .equatable)
+  public enum Destination {
+    case sheet(SheetReducer)
   }
 }
 
 struct AppViewTCA: View {
-  @Bindable var store = StoreOf<AppReducer>(
-    initialState: AppReducer.State()
-  ) {
-    AppReducer()
-  }
+  @Bindable var store: StoreOf<AppReducer>
   
   var body: some View {
     Button("Tap") {
@@ -42,8 +41,8 @@ struct AppViewTCA: View {
     }
     .navigationTitle("TCA")
     .sheet(item: $store.scope(
-      state: \.sheet,
-      action: \.sheet
+      state: \.destination?.sheet,
+      action: \.destination.sheet
     )) { store in
       SheetViewTCA(store: store)
     }
@@ -56,10 +55,11 @@ struct AppViewTCA: View {
 struct SheetReducer {
   @ObservableState
   struct State: Equatable {
-    //...
+    var values: IdentifiedArrayOf<FuckbarClient.Model> = []
   }
   enum Action {
     case task
+    case fuckbarResponse(FuckbarClient.Model)
     case cancelButtonTapped
   }
   
@@ -70,12 +70,18 @@ struct SheetReducer {
     Reduce { state, action in
       switch action {
         
+      case let .fuckbarResponse(value):
+        state.values.append(value)
+        return .none
+        
       case .cancelButtonTapped:
         return .run { _ in await self.dismiss() }
         
       case .task:
-        return .run { _ in
-          for await _ in await self.fuckbar.values() {}
+        return .run { send in
+          for await value in await self.fuckbar.values() {
+            await send(.fuckbarResponse(value))
+          }
         }
       }
     }
@@ -87,12 +93,18 @@ struct SheetViewTCA: View {
   
   var body: some View {
     NavigationStack {
-      Text("Sheet")
-    }
-    .task { await self.store.send(.task).finish() }
-    .toolbar {
-      Button("Cancel") {
-        self.store.send(.cancelButtonTapped)
+      List {
+        ForEach(self.store.values) { value in
+          Text(value.rawValue.description)
+        }
+      }
+      .listStyle(.plain)
+      .navigationTitle("Sheet")
+      .task { await self.store.send(.task).finish() }
+      .toolbar {
+        Button("Cancel") {
+          self.store.send(.cancelButtonTapped)
+        }
       }
     }
   }
@@ -100,6 +112,10 @@ struct SheetViewTCA: View {
 
 #Preview {
   NavigationStack {
-    AppViewTCA()
+    AppViewTCA(store: StoreOf<AppReducer>(
+      initialState: AppReducer.State()
+    ) {
+      AppReducer()
+    })
   }
 }

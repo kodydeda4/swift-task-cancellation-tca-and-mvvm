@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftUINavigation
 import Dependencies
+import IdentifiedCollections
 
 @Observable
 @MainActor
@@ -30,7 +31,7 @@ final class AppModel {
 }
 
 struct AppViewMVVM: View {
-  @Bindable var model = AppModel()
+  @Bindable var model: AppModel
   
   var body: some View {
     Button("Tap") {
@@ -49,7 +50,7 @@ struct AppViewMVVM: View {
 @MainActor
 final class SheetModel: Identifiable {
   let id = UUID()
-  var values: [Int] = []
+  var values: IdentifiedArrayOf<FuckbarClient.Model> = []
   var dismiss: () -> Void = unimplemented("SheetModel.dismiss")
   
   @ObservationIgnored
@@ -62,7 +63,7 @@ final class SheetModel: Identifiable {
   var task: Task<Void, Never> {
     Task.detached {
       for await value in await self.fuckbar.values() {
-        await MainActor.run {
+        _ = await MainActor.run {
           self.values.append(value)
         }
       }
@@ -76,8 +77,8 @@ struct SheetViewMVVM: View {
   var body: some View {
     NavigationStack {
       List {
-        ForEach(self.model.values, id: \.self) { value in
-          Text(value.description)
+        ForEach(self.model.values) { value in
+          Text(value.rawValue.description)
         }
       }
       .listStyle(.plain)
@@ -94,6 +95,6 @@ struct SheetViewMVVM: View {
 
 #Preview {
   NavigationStack {
-    AppViewMVVM()
+    AppViewMVVM(model: AppModel())
   }
 }

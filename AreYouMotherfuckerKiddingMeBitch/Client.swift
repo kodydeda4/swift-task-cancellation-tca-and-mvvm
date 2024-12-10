@@ -4,7 +4,12 @@ import SwiftUI
 
 @DependencyClient
 struct FuckbarClient: Sendable {
-  var values: @Sendable () async -> AsyncStream<Int> = { .finished }
+  var values: @Sendable () async -> AsyncStream<Model> = { .finished }
+  
+  struct Model: Identifiable, Sendable, Equatable {
+    let id: UUID
+    let rawValue: Int
+  }
 }
 
 extension FuckbarClient: DependencyKey {
@@ -12,7 +17,10 @@ extension FuckbarClient: DependencyKey {
     AsyncStream { continuation in
       let task = Task {
         while !Task.isCancelled {
-          let value = Int.random(in: 1..<100)
+          let value = Model(
+            id: UUID(),
+            rawValue: Int.random(in: 1..<100)
+          )
           continuation.yield(value)
           print(value)
           try? await Task.sleep(for: .seconds(1))
