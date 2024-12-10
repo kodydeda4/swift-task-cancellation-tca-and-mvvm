@@ -42,14 +42,14 @@ final class SheetModel: Identifiable {
   @ObservationIgnored
   @Dependency(\.fuckbar) var fuckbar
   
+  func cancelButtonTapped() {
+    self.dismiss()
+  }
+  
   var task: Task<Void, Never> {
     Task.detached {
       for await _ in await self.fuckbar.values() {}
     }
-  }
-  
-  func cancelButtonTapped() {
-    self.dismiss()
   }
 }
 
