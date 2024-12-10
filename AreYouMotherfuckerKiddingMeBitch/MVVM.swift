@@ -60,13 +60,13 @@ final class SheetModel: Identifiable {
     self.dismiss()
   }
   
-  var task: Task<Void, Never> {
-    Task.detached {
-      for await value in await self.fuckbar.values() {
-        await MainActor.run {
-          _ = self.values.append(value)
-        }
-      }
+  func addValue(value: FuckbarClient.Model) {
+    self.values.append(value)
+  }
+  
+  func task() async {
+    for await value in self.fuckbar.values() {
+      self.values.append(value)
     }
   }
 }
@@ -83,7 +83,7 @@ struct SheetViewMVVM: View {
       }
       .listStyle(.plain)
       .navigationTitle("Sheet")
-      .task { await self.model.task.cancellableValue }
+      .task { await self.model.task() }
       .toolbar {
         Button("Cancel") {
           self.model.cancelButtonTapped()
