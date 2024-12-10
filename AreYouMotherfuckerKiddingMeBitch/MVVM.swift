@@ -65,8 +65,14 @@ final class SheetModel: Identifiable {
   }
   
   func task() async {
-    for await value in self.fuckbar.values() {
-      self.values.append(value)
+    await withTaskGroup(of: Void.self) { taskGroup in
+      taskGroup.addTask {
+        for await value in await self.fuckbar.values() {
+          await MainActor.run {
+            _ = self.values.append(value)
+          }
+        }
+      }
     }
   }
 }

@@ -25,7 +25,7 @@ extension FuckbarClient: DependencyKey {
             rawValue: Int.random(in: 1..<100)
           )
           continuation.yield(value)
-          print(value)
+          print("Client \(Date()) \(value)")
           try? await Task.sleep(for: .seconds(1))
         }
       }
