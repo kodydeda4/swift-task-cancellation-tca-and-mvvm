@@ -1,18 +1,30 @@
 import SwiftUI
+import SwiftUINavigation
 import Dependencies
 
 @Observable
 @MainActor
 final class AppModel {
-  var sheet: SheetModel? { didSet { self.bind() } }
+  var destination: Destination? { didSet { self.bind() } }
+  
+  @CasePathable
+  enum Destination {
+    case sheet(SheetModel)
+  }
   
   func buttonTapped() {
-    self.sheet = SheetModel()
+    self.destination = .sheet(SheetModel())
   }
   
   private func bind() {
-    self.sheet?.dismiss = { [weak self] in
-      self?.sheet = nil
+    switch destination {
+      
+    case let .sheet(model):
+      model.dismiss = { [weak self] in
+        self?.destination = .none
+      }
+    case .none:
+      break
     }
   }
 }
@@ -25,7 +37,7 @@ struct AppViewMVVM: View {
       self.model.buttonTapped()
     }
     .navigationTitle("MVVM")
-    .sheet(item: $model.sheet) { model in
+    .sheet(item: $model.destination.sheet) { model in
       SheetViewMVVM(model: model)
     }
   }
@@ -37,6 +49,7 @@ struct AppViewMVVM: View {
 @MainActor
 final class SheetModel: Identifiable {
   let id = UUID()
+  var values: [Int] = []
   var dismiss: () -> Void = unimplemented("SheetModel.dismiss")
   
   @ObservationIgnored
@@ -48,7 +61,11 @@ final class SheetModel: Identifiable {
   
   var task: Task<Void, Never> {
     Task.detached {
-      for await _ in await self.fuckbar.values() {}
+      for await value in await self.fuckbar.values() {
+        await MainActor.run {
+          self.values.append(value)
+        }
+      }
     }
   }
 }
@@ -58,12 +75,18 @@ struct SheetViewMVVM: View {
   
   var body: some View {
     NavigationStack {
-      Text("Sheet")
-    }
-    .task { await self.model.task.cancellableValue }
-    .toolbar {
-      Button("Cancel") {
-        self.model.cancelButtonTapped()
+      List {
+        ForEach(self.model.values, id: \.self) { value in
+          Text(value.description)
+        }
+      }
+      .listStyle(.plain)
+      .navigationTitle("Sheet")
+      .task { await self.model.task.cancellableValue }
+      .toolbar {
+        Button("Cancel") {
+          self.model.cancelButtonTapped()
+        }
       }
     }
   }
