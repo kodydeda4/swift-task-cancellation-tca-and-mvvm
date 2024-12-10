@@ -63,8 +63,8 @@ final class SheetModel: Identifiable {
   var task: Task<Void, Never> {
     Task.detached {
       for await value in await self.fuckbar.values() {
-        _ = await MainActor.run {
-          self.values.append(value)
+        await MainActor.run {
+          _ = self.values.append(value)
         }
       }
     }
